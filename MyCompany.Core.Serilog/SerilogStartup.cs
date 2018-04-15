@@ -9,13 +9,22 @@ namespace MyCompany.Core.Serilog
     {
         public static ILogger Logger { get; set; }
 
+        public static LoggingLevelSwitch LoggingLevelSwitch { get; set; }
+
         public static void InitialiseLogger(ILoggingFrameworkTesterConfig config)
         {
             // dynamic logging level, minimum level can be altered at runtime...nice!
-            var levelSwitch = new LoggingLevelSwitch();
+            LoggingLevelSwitch = new LoggingLevelSwitch();
+            LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
 
             var loggerConfig = CreateCoreLogger()
-                .MinimumLevel.ControlledBy(levelSwitch);
+                .MinimumLevel.ControlledBy(LoggingLevelSwitch);
+
+            // Not necessary in code since rolling file logging has been set up in config file
+            //if (config.LogToFile)
+            //{
+            //    loggerConfig.WriteTo.RollingFile(pathFormat: @"Logs/lft-{Date}.txt", retainedFileCountLimit: 7);
+            //}
 
             // Only log to Seq if it is turned on in config file
             if (config.LogToSeqServer)
@@ -39,9 +48,11 @@ namespace MyCompany.Core.Serilog
         private static LoggerConfiguration CreateCoreLogger()
         {
             var loggerConfig = new LoggerConfiguration()
-                .ReadFrom.AppSettings()
-                .WriteTo.ColoredConsole()
-                .Enrich.FromLogContext()
+                .ReadFrom.AppSettings() // Read serilog entries from config file
+                .WriteTo.ColoredConsole() // Write out serilog logging entries to the console and color code them
+                
+                // meta data for seq entries
+                .Enrich.FromLogContext() 
                 .Enrich.With<ApplicationVersionEnricher>()
                 .Enrich.WithMachineName();
 

@@ -16,37 +16,46 @@ namespace LoggingFrameworkTester
 
             SerilogStartup.InitialiseLogger(config);
 
-            for (int i = 1; i <= 30; i++)
+            while (true)
             {
-                ComplexData complexData = new ComplexData { Sequence = i, CreatedDate = DateTime.UtcNow };
-                try
+                for (int i = 1; i <= 20; i++)
                 {
-                    Log.Information("Ok {AdUserName} .... lets see what happens now {@ComplexData}", Environment.UserDomainName, complexData);
-                    if (i % 3 == 0)
+                    ComplexData complexData = new ComplexData { Sequence = i, CreatedDate = DateTime.UtcNow };
+                    try
                     {
-                        complexData.ErrorTypeId = 3;
-                        Log.Warning("Was divisible by 3!!");
+                        Log.Information("Ok {AdUserName} .... lets see what happens now {@ComplexData}", Environment.UserDomainName, complexData);
+                        if (i % 3 == 0)
+                        {
+                            complexData.ErrorTypeId = 3;
+                            Log.Warning("Was divisible by 3!! - {@ComplexData}", complexData);
+                        }
+                        if (i % 4 == 0)
+                        {
+                            complexData.ErrorTypeId = 4;
+                            throw new NullReferenceException("Dodgy null reference exceptions! ... Cant wait for C#7!");
+                        }
+                        if (i % 5 == 0)
+                        {
+                            complexData.ErrorTypeId = 5;
+                            throw new ArgumentException("Another argument exception! Should have used a constraint!");
+                        }
                     }
-                    if (i % 4 == 0)
+                    catch (Exception ex)
                     {
-                        complexData.ErrorTypeId = 4;
-                        throw new NullReferenceException("Dodgy null reference exceptions! ... Cant wait for C#7!");
+                        if (complexData.ErrorTypeId == 4) Log.Error(ex, "Was divisible by 4!! - {@ComplexData}", complexData);
+                        if (complexData.ErrorTypeId == 5) Log.Fatal(ex, "Was divisible by 5!! - {@ComplexData}", complexData);
                     }
-                    if (i % 5 == 0)
-                    {
-                        complexData.ErrorTypeId = 5;
-                        throw new ArgumentException("Another argument exception! Should have used a constraint!");
-                    }
+                    Thread.Sleep(1000);
                 }
-                catch(Exception ex)
-                {
-                    if (complexData.ErrorTypeId == 4) Log.Error(ex, "Was divisible by 4!!");
-                    if (complexData.ErrorTypeId == 5) Log.Fatal(ex, "Was divisible by 5!!");
-                }
-                Thread.Sleep(1000);
-            }
 
-            Console.ReadKey();
+                Console.WriteLine("Press ESCAPE to exit or change the logging level - choose between 0-5");
+                var key = Console.ReadKey();
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    Environment.Exit(0);
+                }
+                SerilogStartup.LoggingLevelSwitch.MinimumLevel = (Serilog.Events.LogEventLevel)(int)Char.GetNumericValue(key.KeyChar);
+            }
         }
     }
 }

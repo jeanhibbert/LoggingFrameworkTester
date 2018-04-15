@@ -7,5 +7,6 @@
         bool LogToEventLog { get; }
         string SeqServerUrl { get; }
         string SeqApiKey { get; }
+        bool LogToFile { get; }
     }
 }
